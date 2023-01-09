@@ -5,7 +5,8 @@ This repository contains the code necessary to train and test convolutional neur
 ## Requirements
 The code mainly relies on [Keras](https://keras.io/#installation) to train and test the CNN models, and [OpenCV](https://pypi.python.org/pypi/opencv-python) for image manipulation.
 
-You can install all the required packages using pip: `pip install -r requirements.txt`
+Need Python 3.10.8
+You can install all the required packages using pip: `pip install -r requirements.txt`, `conda install -y -c conda-forge cudatoolkit=11.2 cudnn=8.1`
 
 The recommended way to use Keras is with the TensorFlow backend. If you want to use it with the Theano backend you will need to make some minor modifications to the code to make it work.
 
@@ -28,3 +29,8 @@ You can also specify the following command line arguments:
 - `-b, --batch_size` to specify the batch size used to run the model.
 - `-c, --crop` to crop out the black borders after rotating the images.
 
+## Run
+
+```sh
+python main.py <INPUT_DIR> <OUTPUT_DIR>
+```

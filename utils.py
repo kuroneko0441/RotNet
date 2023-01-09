@@ -1,10 +1,13 @@
 from __future__ import division
 
+import os
 import math
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.image
 
+from keras.applications.imagenet_utils import preprocess_input
 from keras.preprocessing.image import Iterator
 from keras.utils.np_utils import to_categorical
 import keras.backend as K
@@ -336,18 +339,20 @@ def display_examples(model, input, num_images=5, size=None, crop_center=False,
         N, h, w = images.shape[:3]
         if not size:
             size = (h, w)
-        indexes = np.random.choice(N, num_images)
+        # indexes = np.random.choice(N, num_images)
+        indexes = range(0, num_images)
         images = images[indexes, ...]
     else:
         images = []
         filenames = input
         N = len(filenames)
-        indexes = np.random.choice(N, num_images)
+        # indexes = np.random.choice(N, num_images)
+        indexes = range(0, num_images)
         for i in indexes:
             image = cv2.imread(filenames[i])
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             images.append(image)
-        images = np.asarray(images)
+        # images = np.asarray(images)
 
     x = []
     y = []
@@ -439,3 +444,42 @@ def display_examples(model, input, num_images=5, size=None, crop_center=False,
 
     if save_path:
         plt.savefig(save_path)
+
+
+def save_output(model, input, output_dir):
+    images = []
+    indexes = range(0, len(input))
+    for i in indexes:
+        images.append(cv2.cvtColor(cv2.imread(input[i]), cv2.COLOR_BGR2RGB))
+
+    x = []
+
+    for image in images:
+        rotated_image = generate_rotated_image(
+            image,
+            0,
+            size=(224, 224),
+            crop_center=False,
+            crop_largest_rect=True
+        )
+        x.append(rotated_image)
+
+    x = np.asarray(x, dtype='float32')
+
+    if x.ndim == 3:
+        x = np.expand_dims(x, axis=3)
+
+    x_rot = np.copy(x)
+    x = preprocess_input(x)
+    y_pred = np.argmax(model.predict(x), axis=1)
+
+    for index, (rotated_image, predicted_angle) in enumerate(zip(x_rot, y_pred)):
+        height, width = images[index].shape[:2]
+
+        if predicted_angle > 180:
+            predicted_angle = predicted_angle - 360
+
+        corrected_image = crop_largest_rectangle(rotate(images[index], -predicted_angle), -predicted_angle, height, width)
+        path = os.path.join(output_dir, os.path.basename(input[index]))
+        matplotlib.image.imsave(path, np.squeeze(corrected_image).astype('uint8'))
+        print(f'Corrected "{input[index]}" by {predicted_angle} degrees and saved to "{path}"')
